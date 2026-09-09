@@ -1,0 +1,2778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Printer Cartridge Inventory</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 1250px;
+    margin: 20px auto;
+    padding: 15px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    font-size: 14px;
+}
+
+button {
+    border: none;
+    padding: 10px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: .85;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.07);
+}
+
+.stat h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+}
+
+.stat strong {
+    font-size: 30px;
+}
+
+.pending-box {
+    background: #f1f3f5;
+    font-weight: bold;
+}
+
+.master-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.master-box {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.master-input {
+    display: flex;
+    gap: 8px;
+}
+
+.master-input input {
+    flex: 1;
+}
+
+.add-btn {
+    background: #198754;
+    color: white;
+}
+
+.master-list {
+    margin-top: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.master-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: white;
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
+
+.remove-btn {
+    background: #dc3545;
+    color: white;
+    padding: 5px 9px;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.new {
+    background: #e9ecef;
+}
+
+.save {
+    background: #198754;
+    color: white;
+}
+
+.import {
+    background: #6f42c1;
+    color: white;
+}
+
+.export {
+    background: #0d6efd;
+    color: white;
+}
+
+.google {
+    background: #ff9800;
+    color: white;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 9px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+th {
+    background: #f0f2f4;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: white;
+    padding: 6px 10px;
+}
+
+.empty {
+    text-align: center;
+    padding: 20px;
+}
+
+.total-info {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
+@media(max-width: 900px) {
+
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .master-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media(max-width: 550px) {
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+<!-- XLSX LIBRARY -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🖨️ Printer Cartridge Inventory Management</h1>
+
+
+<!-- ================= DASHBOARD ================= -->
+
+<div class="dashboard">
+
+    <div class="stat">
+        <h3>📥 Total In Stock</h3>
+        <strong id="totalIn">0</strong>
+    </div>
+
+    <div class="stat">
+        <h3>📤 Total Out Stock</h3>
+        <strong id="totalOut">0</strong>
+    </div>
+
+    <div class="stat">
+        <h3>⏳ Total Pending</h3>
+        <strong id="totalPending">0</strong>
+    </div>
+
+    <div class="stat">
+        <h3>🗑️ Total Garbage</h3>
+        <strong id="totalGarbage">0</strong>
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     MASTER DATA
+===================================================== -->
+
+<div class="card" style="display:none;">
+
+<h2>⚙️ Cartridge & Printer Master</h2>
+
+<div class="master-grid">
+
+
+    <div class="master-box">
+
+        <h3>Cartridge Name</h3>
+
+        <div class="master-input">
+
+            <input
+                type="text"
+                id="newCartridge"
+                placeholder="Enter cartridge name">
+
+            <button
+                class="add-btn"
+                onclick="addCartridge()">
+
+                ADD
+
+            </button>
+
+        </div>
+
+        <div
+            id="cartridgeList"
+            class="master-list">
+        </div>
+
+    </div>
+
+
+    <div class="master-box">
+
+        <h3>Printer Model</h3>
+
+        <div class="master-input">
+
+            <input
+                type="text"
+                id="newPrinter"
+                placeholder="Enter printer model">
+
+            <button
+                class="add-btn"
+                onclick="addPrinter()">
+
+                ADD
+
+            </button>
+
+        </div>
+
+        <div
+            id="printerList"
+            class="master-list">
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     ENTRY FORM
+===================================================== -->
+
+<div class="card">
+
+<h2>➕ New Inventory Entry</h2>
+
+<div class="form-grid">
+
+
+    <div>
+
+        <label>Date</label>
+
+        <input
+            type="date"
+            id="date">
+
+    </div>
+
+
+    <div>
+
+        <label>Cartridge Name</label>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+
+            <select id="cartridge" style="flex:1;">
+
+                <option value="">
+                    Select Cartridge
+                </option>
+
+            </select>
+
+            <button type="button" onclick="addSelectedCartridge()">ADD</button>
+
+            <button type="button" onclick="editSelectedCartridge()">EDIT</button>
+
+        </div>
+
+    </div>
+
+
+    <div>
+
+        <label>Printer Model</label>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+
+            <select id="printer" style="flex:1;">
+
+                <option value="">
+                    Select Printer
+                </option>
+
+            </select>
+
+            <button type="button" onclick="addSelectedPrinter()">ADD</button>
+
+            <button type="button" onclick="editSelectedPrinter()">EDIT</button>
+
+        </div>
+
+    </div>
+
+
+    <div>
+
+        <label>Staff Name</label>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+
+            <select id="staffName" style="flex:1;">
+                <option value="">
+                    Select Staff Name
+                </option>
+            </select>
+
+            <button type="button" onclick="addSelectedStaffName()">ADD</button>
+            <button type="button" onclick="editSelectedStaffName()">EDIT</button>
+
+        </div>
+
+    </div>
+
+
+    <div>
+
+        <label>Staff Location</label>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+
+            <select id="staffLocation" style="flex:1;">
+                <option value="">
+                    Select Staff Location
+                </option>
+            </select>
+
+            <button type="button" onclick="addSelectedStaffLocation()">ADD</button>
+            <button type="button" onclick="editSelectedStaffLocation()">EDIT</button>
+
+        </div>
+
+    </div>
+
+
+    <div>
+
+        <label>In Stock</label>
+
+        <input
+            type="number"
+            id="inStock"
+            min="0"
+            value="0">
+
+    </div>
+
+
+    <div>
+
+        <label>Out Stock</label>
+
+        <input
+            type="number"
+            id="outStock"
+            min="0"
+            value="0">
+
+    </div>
+
+
+    <div>
+
+        <label>Pending Stock</label>
+
+        <input
+            type="number"
+            id="pending"
+            value="0"
+            readonly
+            class="pending-box">
+
+    </div>
+
+
+    <div>
+
+        <label>Garbage Stock</label>
+
+        <input
+            type="number"
+            id="garbage"
+            min="0"
+            value="0">
+
+    </div>
+
+</div>
+
+
+<div class="buttons">
+
+    <button
+        class="new"
+        onclick="newEntry()">
+
+        NEW
+
+    </button>
+
+
+    <button
+        class="save"
+        onclick="saveEntry()">
+
+        SAVE
+
+    </button>
+
+
+    <button
+        class="import"
+        onclick="document.getElementById('fileInput').click()">
+
+        IMPORT
+
+    </button>
+
+
+    <button
+        class="export"
+        onclick="exportXLSX()">
+
+        EXPORT
+
+    </button>
+
+
+    <button
+        class="google"
+        onclick="saveToGoogle()">
+
+        SAVE TO GOOGLE
+
+    </button>
+
+
+    <button
+        class="google"
+        onclick="importFromGoogle()">
+
+        IMPORT GOOGLE
+
+    </button>
+
+
+    <!-- XLSX FILE INPUT -->
+
+    <input
+        type="file"
+        id="fileInput"
+        accept=".xlsx,.xls"
+        style="display:none"
+        onchange="importXLSX(event)">
+
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     RECORDS
+===================================================== -->
+
+<div class="card">
+
+<h2>📋 Inventory Records</h2>
+
+
+<div class="form-grid">
+
+    <div>
+
+        <label>Search</label>
+
+        <input
+            type="text"
+            id="search"
+            placeholder="Search cartridge or printer..."
+            oninput="displayData()">
+
+    </div>
+
+
+    <div>
+
+        <label>Filter Date</label>
+
+        <input
+            type="date"
+            id="filterDate"
+            onchange="displayData()">
+
+    </div>
+
+</div>
+
+
+<div class="total-info">
+
+    Showing:
+    <strong id="recordCount">0</strong>
+    records
+
+</div>
+
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+    <th>Date</th>
+    <th>Cartridge</th>
+    <th>Printer</th>
+    <th>Staff Name</th>
+    <th>Staff Location</th>
+    <th>In Stock</th>
+    <th>Out Stock</th>
+    <th>Pending</th>
+    <th>Garbage</th>
+    <th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   DATA
+===================================================== */
+
+let inventory =
+    JSON.parse(
+        localStorage.getItem(
+            "cartridgeInventory"
+        ) || "[]"
+    );
+
+
+let cartridges =
+    JSON.parse(
+        localStorage.getItem(
+            "cartridgeMaster"
+        ) || "[]"
+    );
+
+
+let printers =
+    JSON.parse(
+        localStorage.getItem(
+            "printerMaster"
+        ) || "[]"
+    );
+
+let staffNames =
+    JSON.parse(
+        localStorage.getItem(
+            "staffNameMaster"
+        ) || "[]"
+    );
+
+let staffLocations =
+    JSON.parse(
+        localStorage.getItem(
+            "staffLocationMaster"
+        ) || "[]"
+    );
+
+
+/* =====================================================
+   GOOGLE SHEETS URL
+===================================================== */
+
+/*
+   અહીં તમારો Google Apps Script Web App URL
+   paste કરવો.
+*/
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwW8k0F-oFBFCiaeIoGkT8Wd_ZhGlFrP0cBZEvlyPBEhd8m3jkmFJyZ--dUZtXmavydig/exec";
+
+
+/* =====================================================
+   PAGE LOAD
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        // Clear inventory data on every page refresh.
+        // Cartridge Master and Printer Master remain saved.
+        inventory = [];
+
+        localStorage.removeItem("cartridgeInventory");
+
+        setToday();
+
+        loadCartridgeDropdown();
+
+        loadPrinterDropdown();
+
+        loadStaffNameDropdown();
+
+        loadStaffLocationDropdown();
+
+        displayMasterLists();
+
+        calculatePending();
+
+        displayData();
+
+    }
+);
+
+
+/* =====================================================
+   TODAY
+===================================================== */
+
+function setToday() {
+
+    document.getElementById(
+        "date"
+    ).value =
+        new Date()
+        .toISOString()
+        .split("T")[0];
+
+}
+
+
+/* =====================================================
+   ADD CARTRIDGE
+===================================================== */
+
+function addCartridge() {
+
+    const input =
+        document.getElementById(
+            "newCartridge"
+        );
+
+
+    const name =
+        input.value.trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter cartridge name."
+        );
+
+        return;
+
+    }
+
+
+    const exists =
+        cartridges.some(
+            item =>
+                item.toLowerCase() ===
+                name.toLowerCase()
+        );
+
+
+    if (exists) {
+
+        alert(
+            "This cartridge already exists."
+        );
+
+        return;
+
+    }
+
+
+    cartridges.push(name);
+
+
+    localStorage.setItem(
+        "cartridgeMaster",
+        JSON.stringify(
+            cartridges
+        )
+    );
+
+
+    input.value = "";
+
+
+    loadCartridgeDropdown();
+
+    displayMasterLists();
+
+
+    document.getElementById(
+        "cartridge"
+    ).value = name;
+
+}
+
+
+/* =====================================================
+   ADD PRINTER
+===================================================== */
+
+function addPrinter() {
+
+    const input =
+        document.getElementById(
+            "newPrinter"
+        );
+
+
+    const name =
+        input.value.trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter printer name."
+        );
+
+        return;
+
+    }
+
+
+    const exists =
+        printers.some(
+            item =>
+                item.toLowerCase() ===
+                name.toLowerCase()
+        );
+
+
+    if (exists) {
+
+        alert(
+            "This printer already exists."
+        );
+
+        return;
+
+    }
+
+
+    printers.push(name);
+
+
+    localStorage.setItem(
+        "printerMaster",
+        JSON.stringify(
+            printers
+        )
+    );
+
+
+    input.value = "";
+
+
+    loadPrinterDropdown();
+
+    displayMasterLists();
+
+
+    document.getElementById(
+        "printer"
+    ).value = name;
+
+}
+
+
+/* =====================================================
+   CARTRIDGE DROPDOWN
+===================================================== */
+
+function loadCartridgeDropdown() {
+
+    const select =
+        document.getElementById(
+            "cartridge"
+        );
+
+
+    select.innerHTML = `
+
+        <option value="">
+            Select Cartridge
+        </option>
+
+    `;
+
+
+    cartridges.forEach(
+        name => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value = name;
+
+            option.textContent = name;
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   PRINTER DROPDOWN
+===================================================== */
+
+function loadPrinterDropdown() {
+
+    const select =
+        document.getElementById(
+            "printer"
+        );
+
+
+    select.innerHTML = `
+
+        <option value="">
+            Select Printer
+        </option>
+
+    `;
+
+
+    printers.forEach(
+        name => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value = name;
+
+            option.textContent = name;
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   STAFF NAME / LOCATION DROPDOWNS
+===================================================== */
+
+function loadStaffNameDropdown() {
+    const select = document.getElementById("staffName");
+    if (!select) return;
+    select.innerHTML = `<option value="">Select Staff Name</option>`;
+    staffNames.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
+function loadStaffLocationDropdown() {
+    const select = document.getElementById("staffLocation");
+    if (!select) return;
+    select.innerHTML = `<option value="">Select Staff Location</option>`;
+    staffLocations.forEach(location => {
+        const option = document.createElement("option");
+        option.value = location;
+        option.textContent = location;
+        select.appendChild(option);
+    });
+}
+
+function addSelectedStaffName() {
+    const newName = prompt("Enter staff name:");
+    if (newName === null) return;
+    const name = newName.trim();
+    if (!name) { alert("Please enter staff name."); return; }
+    if (staffNames.some(item => item.toLowerCase() === name.toLowerCase())) { alert("This staff name already exists."); return; }
+    staffNames.push(name);
+    localStorage.setItem("staffNameMaster", JSON.stringify(staffNames));
+    loadStaffNameDropdown();
+    document.getElementById("staffName").value = name;
+}
+
+function editSelectedStaffName() {
+    const select = document.getElementById("staffName");
+    const index = staffNames.indexOf(select.value);
+    if (index === -1) { alert("Please select a staff name first."); return; }
+    const newName = prompt("Edit staff name:", staffNames[index]);
+    if (newName === null) return;
+    const name = newName.trim();
+    if (!name) { alert("Please enter staff name."); return; }
+    if (staffNames.some((item, i) => i !== index && item.toLowerCase() === name.toLowerCase())) { alert("This staff name already exists."); return; }
+    staffNames[index] = name;
+    localStorage.setItem("staffNameMaster", JSON.stringify(staffNames));
+    loadStaffNameDropdown();
+    document.getElementById("staffName").value = name;
+}
+
+function addSelectedStaffLocation() {
+    const newLocation = prompt("Enter staff location:");
+    if (newLocation === null) return;
+    const location = newLocation.trim();
+    if (!location) { alert("Please enter staff location."); return; }
+    if (staffLocations.some(item => item.toLowerCase() === location.toLowerCase())) { alert("This staff location already exists."); return; }
+    staffLocations.push(location);
+    localStorage.setItem("staffLocationMaster", JSON.stringify(staffLocations));
+    loadStaffLocationDropdown();
+    document.getElementById("staffLocation").value = location;
+}
+
+function editSelectedStaffLocation() {
+    const select = document.getElementById("staffLocation");
+    const index = staffLocations.indexOf(select.value);
+    if (index === -1) { alert("Please select a staff location first."); return; }
+    const newLocation = prompt("Edit staff location:", staffLocations[index]);
+    if (newLocation === null) return;
+    const location = newLocation.trim();
+    if (!location) { alert("Please enter staff location."); return; }
+    if (staffLocations.some((item, i) => i !== index && item.toLowerCase() === location.toLowerCase())) { alert("This staff location already exists."); return; }
+    staffLocations[index] = location;
+    localStorage.setItem("staffLocationMaster", JSON.stringify(staffLocations));
+    loadStaffLocationDropdown();
+    document.getElementById("staffLocation").value = location;
+}
+
+
+/* =====================================================
+   MASTER LIST
+===================================================== */
+
+function displayMasterLists() {
+
+    const cartridgeList =
+        document.getElementById(
+            "cartridgeList"
+        );
+
+
+    const printerList =
+        document.getElementById(
+            "printerList"
+        );
+
+
+    cartridgeList.innerHTML = "";
+
+    printerList.innerHTML = "";
+
+
+    cartridges.forEach(
+        (name, index) => {
+
+            cartridgeList.innerHTML += `
+
+                <div class="master-item">
+
+                    <span>
+                        ${escapeHTML(name)}
+                    </span>
+
+                    <button
+                        class="remove-btn"
+                        onclick="removeCartridge(${index})">
+
+                        DELETE
+
+                    </button>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    printers.forEach(
+        (name, index) => {
+
+            printerList.innerHTML += `
+
+                <div class="master-item">
+
+                    <span>
+                        ${escapeHTML(name)}
+                    </span>
+
+                    <button
+                        onclick="editPrinter(${index})">
+
+                        EDIT
+
+                    </button>
+
+                    <button
+                        class="remove-btn"
+                        onclick="removePrinter(${index})">
+
+                        DELETE
+
+                    </button>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   ADD CARTRIDGE MODEL
+===================================================== */
+
+function addSelectedCartridge() {
+
+    const newName = prompt("Enter cartridge model:");
+
+    if (newName === null) return;
+
+    const name = newName.trim();
+
+    if (!name) {
+        alert("Please enter cartridge model.");
+        return;
+    }
+
+    const exists = cartridges.some(
+        item => item.toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert("This cartridge model already exists.");
+        return;
+    }
+
+    cartridges.push(name);
+
+    localStorage.setItem(
+        "cartridgeMaster",
+        JSON.stringify(cartridges)
+    );
+
+    loadCartridgeDropdown();
+    displayMasterLists();
+    document.getElementById("cartridge").value = name;
+}
+
+
+/* =====================================================
+   ADD PRINTER MODEL
+===================================================== */
+
+function addSelectedPrinter() {
+
+    const newName = prompt("Enter printer model:");
+
+    if (newName === null) return;
+
+    const name = newName.trim();
+
+    if (!name) {
+        alert("Please enter printer model.");
+        return;
+    }
+
+    const exists = printers.some(
+        item => item.toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert("This printer model already exists.");
+        return;
+    }
+
+    printers.push(name);
+
+    localStorage.setItem(
+        "printerMaster",
+        JSON.stringify(printers)
+    );
+
+    loadPrinterDropdown();
+    displayMasterLists();
+    document.getElementById("printer").value = name;
+}
+
+
+/* =====================================================
+   EDIT SELECTED CARTRIDGE MODEL
+===================================================== */
+
+function editSelectedCartridge() {
+
+    const select = document.getElementById("cartridge");
+    const index = cartridges.indexOf(select.value);
+
+    if (index === -1) {
+        alert("Please select a cartridge model first.");
+        return;
+    }
+
+    const oldName = cartridges[index];
+    const newName = prompt("Edit cartridge model:", oldName);
+
+    if (newName === null) return;
+
+    const name = newName.trim();
+
+    if (!name) {
+        alert("Please enter cartridge model.");
+        return;
+    }
+
+    const exists = cartridges.some(
+        (item, i) => i !== index && item.toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert("This cartridge model already exists.");
+        return;
+    }
+
+    cartridges[index] = name;
+
+    localStorage.setItem(
+        "cartridgeMaster",
+        JSON.stringify(cartridges)
+    );
+
+    loadCartridgeDropdown();
+    displayMasterLists();
+    document.getElementById("cartridge").value = name;
+}
+
+
+/* =====================================================
+   EDIT SELECTED PRINTER MODEL
+===================================================== */
+
+function editSelectedPrinter() {
+
+    const select = document.getElementById("printer");
+    const index = printers.indexOf(select.value);
+
+    if (index === -1) {
+        alert("Please select a printer model first.");
+        return;
+    }
+
+    editPrinter(index);
+
+    loadPrinterDropdown();
+    document.getElementById("printer").value = printers[index] || "";
+}
+
+
+/* =====================================================
+   REMOVE CARTRIDGE
+===================================================== */
+
+function removeCartridge(index) {
+
+    if (
+        !confirm(
+            "Delete cartridge: " +
+            cartridges[index] +
+            " ?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    cartridges.splice(
+        index,
+        1
+    );
+
+
+    localStorage.setItem(
+        "cartridgeMaster",
+        JSON.stringify(
+            cartridges
+        )
+    );
+
+
+    loadCartridgeDropdown();
+
+    displayMasterLists();
+
+}
+
+
+/* =====================================================
+   EDIT PRINTER MODEL
+===================================================== */
+
+function editPrinter(index) {
+
+    const oldName = printers[index];
+
+    const newName = prompt(
+        "Edit printer model:",
+        oldName
+    );
+
+    if (newName === null) {
+        return;
+    }
+
+    const name = newName.trim();
+
+    if (!name) {
+        alert("Please enter printer model.");
+        return;
+    }
+
+    const exists = printers.some(
+        (item, i) =>
+            i !== index &&
+            item.toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert("This printer model already exists.");
+        return;
+    }
+
+    printers[index] = name;
+
+    localStorage.setItem(
+        "printerMaster",
+        JSON.stringify(printers)
+    );
+
+    loadPrinterDropdown();
+    displayMasterLists();
+}
+
+
+/* =====================================================
+   REMOVE PRINTER
+===================================================== */
+
+function removePrinter(index) {
+
+    if (
+        !confirm(
+            "Delete printer: " +
+            printers[index] +
+            " ?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    printers.splice(
+        index,
+        1
+    );
+
+
+    localStorage.setItem(
+        "printerMaster",
+        JSON.stringify(
+            printers
+        )
+    );
+
+
+    loadPrinterDropdown();
+
+    displayMasterLists();
+
+}
+
+
+/* =====================================================
+   AUTOMATIC PENDING
+===================================================== */
+
+function calculatePending() {
+
+    const inStock =
+        Number(
+            document.getElementById(
+                "inStock"
+            ).value
+        ) || 0;
+
+
+    const outStock =
+        Number(
+            document.getElementById(
+                "outStock"
+            ).value
+        ) || 0;
+
+
+    let pending =
+        inStock -
+        outStock;
+
+
+    if (
+        pending < 0
+    ) {
+
+        pending = 0;
+
+    }
+
+
+    document.getElementById(
+        "pending"
+    ).value =
+        pending;
+
+}
+
+
+document.getElementById(
+    "inStock"
+).addEventListener(
+    "input",
+    calculatePending
+);
+
+
+document.getElementById(
+    "outStock"
+).addEventListener(
+    "input",
+    calculatePending
+);
+
+
+/* =====================================================
+   SAVE ENTRY
+===================================================== */
+
+let editingId = null;
+
+function editEntry(id) {
+    const item = inventory.find(record => record.id === id);
+    if (!item) { alert("Record not found."); return; }
+    editingId = id;
+    document.getElementById("date").value = item.date || "";
+    document.getElementById("cartridge").value = item.cartridge || "";
+    document.getElementById("printer").value = item.printer || "";
+    document.getElementById("staffName").value = item.staffName || "";
+    document.getElementById("staffLocation").value = item.staffLocation || "";
+    document.getElementById("inStock").value = item.inStock || 0;
+    document.getElementById("outStock").value = item.outStock || 0;
+    document.getElementById("pending").value = item.pending || 0;
+    document.getElementById("garbage").value = item.garbage || 0;
+    window.scrollTo({top:0, behavior:"smooth"});
+}
+
+
+async function saveEntry() {
+
+    calculatePending();
+
+
+    const date =
+        document.getElementById(
+            "date"
+        ).value;
+
+
+    const cartridge =
+        document.getElementById(
+            "cartridge"
+        ).value;
+
+
+    const printer =
+        document.getElementById(
+            "printer"
+        ).value;
+
+
+    const staffName =
+        document.getElementById(
+            "staffName"
+        ).value;
+
+
+    const staffLocation =
+        document.getElementById(
+            "staffLocation"
+        ).value;
+
+
+    const inStock =
+        Number(
+            document.getElementById(
+                "inStock"
+            ).value
+        ) || 0;
+
+
+    const outStock =
+        Number(
+            document.getElementById(
+                "outStock"
+            ).value
+        ) || 0;
+
+
+    const pending =
+        Number(
+            document.getElementById(
+                "pending"
+            ).value
+        ) || 0;
+
+
+    const garbage =
+        Number(
+            document.getElementById(
+                "garbage"
+            ).value
+        ) || 0;
+
+
+    if (!date) {
+
+        alert(
+            "Please select Date."
+        );
+
+        return;
+
+    }
+
+
+    if (!cartridge) {
+
+        alert(
+            "Please add/select Cartridge Name."
+        );
+
+        return;
+
+    }
+
+
+    if (!printer) {
+
+        alert(
+            "Please add/select Printer Name."
+        );
+
+        return;
+
+    }
+
+
+    const entry = {
+        id: editingId || Date.now(),
+        date: date,
+        cartridge: cartridge,
+        printer: printer,
+        staffName: staffName,
+        staffLocation: staffLocation,
+        inStock: inStock,
+        outStock: outStock,
+        pending: pending,
+        garbage: garbage
+    };
+
+    const wasEditing = !!editingId;
+
+    if (editingId) {
+        const index = inventory.findIndex(item => item.id === editingId);
+        if (index !== -1) inventory[index] = entry;
+        editingId = null;
+    } else {
+        inventory.push(entry);
+    }
+
+    localStorage.setItem(
+        "cartridgeInventory",
+        JSON.stringify(
+            inventory
+        )
+    );
+
+    displayData();
+    newEntry();
+
+    // Automatically save only this entry to Google Sheets.
+    try {
+        const response = await fetch(
+            GOOGLE_SCRIPT_URL,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(entry)
+            }
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(wasEditing
+                ? "✅ Entry updated in Google Sheets!"
+                : "✅ Data saved successfully & added to Google Sheets!");
+        } else {
+            alert("⚠️ Website saved, but Google Sheets error: " + result.message);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("⚠️ Website saved, but Google Sheets connection failed.");
+    }
+
+}
+
+
+/* =====================================================
+   NEW ENTRY
+===================================================== */
+
+function newEntry() {
+
+    editingId = null;
+
+    setToday();
+
+
+    document.getElementById(
+        "cartridge"
+    ).value = "";
+
+
+    document.getElementById(
+        "printer"
+    ).value = "";
+
+
+    document.getElementById(
+        "staffName"
+    ).value = "";
+
+
+    document.getElementById(
+        "staffLocation"
+    ).value = "";
+
+
+    document.getElementById(
+        "inStock"
+    ).value = 0;
+
+
+    document.getElementById(
+        "outStock"
+    ).value = 0;
+
+
+    document.getElementById(
+        "pending"
+    ).value = 0;
+
+
+    document.getElementById(
+        "garbage"
+    ).value = 0;
+
+
+    calculatePending();
+
+}
+
+
+/* =====================================================
+   DISPLAY DATA
+===================================================== */
+
+function displayData() {
+
+    const body =
+        document.getElementById(
+            "tableBody"
+        );
+
+
+    body.innerHTML = "";
+
+
+    const search =
+        document.getElementById(
+            "search"
+        )
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    const filterDate =
+        document.getElementById(
+            "filterDate"
+        )
+        .value;
+
+
+    const filtered =
+        inventory.filter(
+            item => {
+
+                const cartridge =
+                    String(
+                        item.cartridge ||
+                        ""
+                    )
+                    .toLowerCase();
+
+
+                const printer =
+                    String(
+                        item.printer ||
+                        ""
+                    )
+                    .toLowerCase();
+
+
+                return (
+
+                    (
+                        cartridge.includes(
+                            search
+                        )
+
+                        ||
+
+                        printer.includes(
+                            search
+                        )
+                    )
+
+                    &&
+
+                    (
+                        !filterDate
+
+                        ||
+
+                        item.date ===
+                        filterDate
+                    )
+
+                );
+
+            }
+        );
+
+
+    document.getElementById(
+        "recordCount"
+    ).innerText =
+        filtered.length;
+
+
+    if (
+        filtered.length === 0
+    ) {
+
+        body.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="10"
+                    class="empty">
+
+                    No inventory records found.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    filtered.forEach(
+        item => {
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${escapeHTML(item.date)}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.cartridge)}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.printer)}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.staffName || "")}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.staffLocation || "")}
+                </td>
+
+                <td>
+                    ${item.inStock}
+                </td>
+
+                <td>
+                    ${item.outStock}
+                </td>
+
+                <td>
+                    ${item.pending}
+                </td>
+
+                <td>
+                    ${item.garbage}
+                </td>
+
+                <td>
+
+                    <button
+                        class="delete-btn"
+                        onclick="editEntry(${item.id})">
+
+                        Edit
+
+                    </button>
+
+                    <button
+                        class="delete-btn"
+                        onclick="deleteEntry(${item.id})">
+
+                        Delete
+
+                    </button>
+
+                </td>
+
+            `;
+
+
+            body.appendChild(
+                row
+            );
+
+        }
+    );
+
+
+    updateDashboard(
+        filtered
+    );
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function updateDashboard(
+    data
+) {
+
+    let totalIn = 0;
+
+    let totalOut = 0;
+
+    let totalPending = 0;
+
+    let totalGarbage = 0;
+
+
+    data.forEach(
+        item => {
+
+            totalIn +=
+                Number(
+                    item.inStock
+                ) || 0;
+
+
+            totalOut +=
+                Number(
+                    item.outStock
+                ) || 0;
+
+
+            totalPending +=
+                Number(
+                    item.pending
+                ) || 0;
+
+
+            totalGarbage +=
+                Number(
+                    item.garbage
+                ) || 0;
+
+        }
+    );
+
+
+    document.getElementById(
+        "totalIn"
+    ).innerText =
+        totalIn;
+
+
+    document.getElementById(
+        "totalOut"
+    ).innerText =
+        totalOut;
+
+
+    document.getElementById(
+        "totalPending"
+    ).innerText =
+        totalPending;
+
+
+    document.getElementById(
+        "totalGarbage"
+    ).innerText =
+        totalGarbage;
+
+}
+
+
+/* =====================================================
+   DELETE RECORD
+===================================================== */
+
+function deleteEntry(id) {
+
+    if (
+        !confirm(
+            "Are you sure you want to delete this entry?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    inventory =
+        inventory.filter(
+            item =>
+                item.id !== id
+        );
+
+
+    localStorage.setItem(
+        "cartridgeInventory",
+        JSON.stringify(
+            inventory
+        )
+    );
+
+
+    displayData();
+
+}
+
+
+/* =====================================================
+   EXPORT XLSX
+===================================================== */
+
+function exportXLSX() {
+
+    if (
+        inventory.length === 0
+    ) {
+
+        alert(
+            "No data available for export."
+        );
+
+        return;
+
+    }
+
+
+    const excelData =
+        inventory.map(
+            item => ({
+
+                "Date":
+                    item.date,
+
+                "Cartridge Name":
+                    item.cartridge,
+
+                "Printer Model":
+                    item.printer,
+
+                "Staff Name":
+                    item.staffName || "",
+
+                "Staff Location":
+                    item.staffLocation || "",
+
+                "In Stock":
+                    Number(
+                        item.inStock
+                    ) || 0,
+
+                "Out Stock":
+                    Number(
+                        item.outStock
+                    ) || 0,
+
+                "Pending Stock":
+                    Number(
+                        item.pending
+                    ) || 0,
+
+                "Garbage Stock":
+                    Number(
+                        item.garbage
+                    ) || 0
+
+            })
+        );
+
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+            excelData
+        );
+
+
+    const workbook =
+        XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Inventory"
+    );
+
+
+    XLSX.writeFile(
+        workbook,
+        "Printer_Cartridge_Inventory.xlsx"
+    );
+
+}
+
+
+/* =====================================================
+   IMPORT XLSX
+===================================================== */
+
+function importXLSX(event) {
+
+    const file =
+        event.target.files[0];
+
+
+    if (!file) {
+        return;
+    }
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function(e) {
+
+            try {
+
+                const data =
+                    new Uint8Array(
+                        e.target.result
+                    );
+
+
+                const workbook =
+                    XLSX.read(
+                        data,
+                        {
+                            type: "array"
+                        }
+                    );
+
+
+                const firstSheet =
+                    workbook.Sheets[
+                        workbook.SheetNames[0]
+                    ];
+
+
+                const rows =
+                    XLSX.utils.sheet_to_json(
+                        firstSheet,
+                        {
+                            defval: ""
+                        }
+                    );
+
+
+                if (
+                    rows.length === 0
+                ) {
+
+                    alert(
+                        "Excel file is empty."
+                    );
+
+                    return;
+
+                }
+
+
+                let imported = 0;
+
+
+                rows.forEach(
+                    row => {
+
+
+                        const date =
+                            row["Date"] ||
+                            row["date"] ||
+                            "";
+
+
+                        const cartridge =
+                            row["Cartridge Name"] ||
+                            row["Cartridge"] ||
+                            "";
+
+
+                        const printer =
+                            row["Printer Model"] ||
+                            row["Printer Name"] ||
+                            row["Printer"] ||
+                            "";
+
+
+                        const staffName =
+                            row["Staff Name"] ||
+                            row["Staff"] ||
+                            "";
+
+
+                        const staffLocation =
+                            row["Staff Location"] ||
+                            row["Location"] ||
+                            "";
+
+
+                        const inStock =
+                            Number(
+                                row["In Stock"] || 0
+                            );
+
+
+                        const outStock =
+                            Number(
+                                row["Out Stock"] || 0
+                            );
+
+
+                        let pending =
+                            inStock -
+                            outStock;
+
+
+                        if (
+                            pending < 0
+                        ) {
+
+                            pending = 0;
+
+                        }
+
+
+                        const garbage =
+                            Number(
+                                row["Garbage Stock"] || 0
+                            );
+
+
+                        if (
+                            !cartridge ||
+                            !printer
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        /* AUTO MASTER ADD */
+
+                        if (
+                            !cartridges.includes(
+                                cartridge
+                            )
+                        ) {
+
+                            cartridges.push(
+                                cartridge
+                            );
+
+                        }
+
+
+                        if (
+                            !printers.includes(
+                                printer
+                            )
+                        ) {
+
+                            printers.push(
+                                printer
+                            );
+
+                        }
+
+
+                        /* ADD RECORD */
+
+                        inventory.push({
+
+                            id:
+                                Date.now()
+                                +
+                                Math.random(),
+
+                            date:
+                                formatExcelDate(
+                                    date
+                                ),
+
+                            cartridge:
+                                cartridge,
+
+                            printer:
+                                printer,
+
+                            staffName:
+                                staffName,
+
+                            staffLocation:
+                                staffLocation,
+
+                            inStock:
+                                inStock,
+
+                            outStock:
+                                outStock,
+
+                            pending:
+                                pending,
+
+                            garbage:
+                                garbage
+
+                        });
+
+
+                        imported++;
+
+                    }
+                );
+
+
+                /* SAVE */
+
+                localStorage.setItem(
+                    "cartridgeInventory",
+                    JSON.stringify(
+                        inventory
+                    )
+                );
+
+
+                inventory.forEach(item => {
+                    if (item.staffName && !staffNames.some(name => name.toLowerCase() === item.staffName.toLowerCase())) {
+                        staffNames.push(item.staffName);
+                    }
+                    if (item.staffLocation && !staffLocations.some(location => location.toLowerCase() === item.staffLocation.toLowerCase())) {
+                        staffLocations.push(item.staffLocation);
+                    }
+                });
+
+                localStorage.setItem("staffNameMaster", JSON.stringify(staffNames));
+                localStorage.setItem("staffLocationMaster", JSON.stringify(staffLocations));
+
+
+                localStorage.setItem(
+                    "cartridgeMaster",
+                    JSON.stringify(
+                        cartridges
+                    )
+                );
+
+
+                localStorage.setItem(
+                    "printerMaster",
+                    JSON.stringify(
+                        printers
+                    )
+                );
+
+
+                loadCartridgeDropdown();
+
+                loadPrinterDropdown();
+
+                loadStaffNameDropdown();
+
+                loadStaffLocationDropdown();
+
+                displayMasterLists();
+
+                displayData();
+
+
+                alert(
+                    imported +
+                    " records imported successfully!"
+                );
+
+
+            }
+
+            catch(error) {
+
+                console.error(
+                    error
+                );
+
+
+                alert(
+                    "❌ Excel import failed."
+                );
+
+            }
+
+
+            event.target.value = "";
+
+        };
+
+
+    reader.readAsArrayBuffer(
+        file
+    );
+
+}
+
+
+/* =====================================================
+   EXCEL DATE FORMAT
+===================================================== */
+
+function formatExcelDate(value) {
+
+    if (!value) {
+        return "";
+    }
+
+
+    /* Excel serial date */
+
+    if (
+        typeof value === "number"
+    ) {
+
+        const excelEpoch =
+            new Date(
+                Date.UTC(
+                    1899,
+                    11,
+                    30
+                )
+            );
+
+
+        const date =
+            new Date(
+                excelEpoch.getTime()
+                +
+                value * 86400000
+            );
+
+
+        return date
+            .toISOString()
+            .split("T")[0];
+
+    }
+
+
+    /* Already YYYY-MM-DD */
+
+    const stringValue =
+        String(value);
+
+
+    if (
+        /^\d{4}-\d{2}-\d{2}$/
+        .test(stringValue)
+    ) {
+
+        return stringValue;
+
+    }
+
+
+    const date =
+        new Date(
+            stringValue
+        );
+
+
+    if (
+        !isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return date
+            .toISOString()
+            .split("T")[0];
+
+    }
+
+
+    return stringValue;
+
+}
+
+
+/* =====================================================
+   GOOGLE SHEETS DIRECT SAVE
+===================================================== */
+
+async function saveToGoogle() {
+
+    if (
+        !GOOGLE_SCRIPT_URL
+    ) {
+
+        alert(
+            "Google Sheets URL is not configured yet."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        inventory.length === 0
+    ) {
+
+        alert(
+            "No data available."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                GOOGLE_SCRIPT_URL,
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "text/plain;charset=utf-8"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            inventory
+                        )
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (
+            result.success
+        ) {
+
+            alert(
+                "✅ Data saved directly to Google Sheets!"
+            );
+
+        }
+
+        else {
+
+            alert(
+                "Google Sheets Error: " +
+                result.message
+            );
+
+        }
+
+    }
+
+    catch(error) {
+
+        console.error(
+            error
+        );
+
+
+        alert(
+            "❌ Google Sheets connection failed."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   GOOGLE SHEETS IMPORT
+===================================================== */
+
+function importFromGoogle() {
+
+    if (!GOOGLE_SCRIPT_URL) {
+
+        alert(
+            "Google Sheets URL is not configured yet."
+        );
+
+        return;
+
+    }
+
+    const callbackName =
+        "googleImportCallback_" + Date.now();
+
+    window[callbackName] = function(result) {
+
+        try {
+
+            if (!result || !result.success) {
+
+                alert(
+                    "Google Sheets Error: " +
+                    ((result && result.message) || "Unable to import data.")
+                );
+
+                return;
+
+            }
+
+            inventory = Array.isArray(result.data)
+                ? result.data.map(function(item) {
+                    return {
+                        id: item.id || Date.now() + Math.random(),
+                        date: item.date || "",
+                        cartridge: item.cartridge || "",
+                        printer: item.printer || "",
+                        staffName: item.staffName || "",
+                        staffLocation: item.staffLocation || "",
+                        inStock: Number(item.inStock) || 0,
+                        outStock: Number(item.outStock) || 0,
+                        pending: Number(item.pending) || 0,
+                        garbage: Number(item.garbage) || 0
+                    };
+                })
+                : [];
+
+            localStorage.setItem(
+                "cartridgeInventory",
+                JSON.stringify(inventory)
+            );
+
+            displayData();
+            calculatePending();
+
+            if (typeof loadCartridgeDropdown === "function") {
+                loadCartridgeDropdown();
+            }
+
+            if (typeof loadPrinterDropdown === "function") {
+                loadPrinterDropdown();
+            }
+
+            if (inventory.length === 0) {
+                alert("No data found in Google Sheets.");
+            } else {
+                alert(
+                    "✅ Google Sheets data imported successfully!"
+                );
+            }
+
+        } finally {
+            delete window[callbackName];
+            const oldScript = document.getElementById(callbackName);
+            if (oldScript) oldScript.remove();
+        }
+    };
+
+    const script = document.createElement("script");
+    script.id = callbackName;
+    script.src =
+        GOOGLE_SCRIPT_URL +
+        "?callback=" +
+        encodeURIComponent(callbackName) +
+        "&t=" +
+        Date.now();
+
+    script.onerror = function() {
+        delete window[callbackName];
+        script.remove();
+        alert("❌ Google Sheets connection failed.");
+    };
+
+    document.body.appendChild(script);
+
+}
+
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value) {
+
+    return String(
+        value || ""
+    )
+    .replaceAll(
+        "&",
+        "&amp;"
+    )
+    .replaceAll(
+        "<",
+        "&lt;"
+    )
+    .replaceAll(
+        ">",
+        "&gt;"
+    )
+    .replaceAll(
+        '"',
+        "&quot;"
+    )
+    .replaceAll(
+        "'",
+        "&#039;"
+    );
+
+}
+
+</script>
+
+</body>
+</html>
