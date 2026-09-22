@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -400,6 +401,8 @@ th {
 
             <button type="button" onclick="editSelectedCartridge()">EDIT</button>
 
+            <button type="button" class="delete-btn" onclick="deleteSelectedCartridge()">DELETE</button>
+
         </div>
 
     </div>
@@ -423,6 +426,8 @@ th {
 
             <button type="button" onclick="editSelectedPrinter()">EDIT</button>
 
+            <button type="button" class="delete-btn" onclick="deleteSelectedPrinter()">DELETE</button>
+
         </div>
 
     </div>
@@ -442,6 +447,7 @@ th {
 
             <button type="button" onclick="addSelectedStaffName()">ADD</button>
             <button type="button" onclick="editSelectedStaffName()">EDIT</button>
+            <button type="button" class="delete-btn" onclick="deleteSelectedStaffName()">DELETE</button>
 
         </div>
 
@@ -462,6 +468,7 @@ th {
 
             <button type="button" onclick="addSelectedStaffLocation()">ADD</button>
             <button type="button" onclick="editSelectedStaffLocation()">EDIT</button>
+            <button type="button" class="delete-btn" onclick="deleteSelectedStaffLocation()">DELETE</button>
 
         </div>
 
@@ -1090,6 +1097,45 @@ function editSelectedStaffLocation() {
     localStorage.setItem("staffLocationMaster", JSON.stringify(staffLocations));
     loadStaffLocationDropdown();
     document.getElementById("staffLocation").value = location;
+}
+
+
+/* =====================================================
+   DELETE SELECTED DROPDOWN ITEMS
+===================================================== */
+
+function deleteSelectedCartridge() {
+    const select = document.getElementById("cartridge");
+    const index = cartridges.indexOf(select.value);
+    if (index === -1) { alert("Please select a cartridge model first."); return; }
+    removeCartridge(index);
+}
+
+function deleteSelectedPrinter() {
+    const select = document.getElementById("printer");
+    const index = printers.indexOf(select.value);
+    if (index === -1) { alert("Please select a printer model first."); return; }
+    removePrinter(index);
+}
+
+function deleteSelectedStaffName() {
+    const select = document.getElementById("staffName");
+    const index = staffNames.indexOf(select.value);
+    if (index === -1) { alert("Please select a staff name first."); return; }
+    if (!confirm("Delete staff name: " + staffNames[index] + " ?")) return;
+    staffNames.splice(index, 1);
+    localStorage.setItem("staffNameMaster", JSON.stringify(staffNames));
+    loadStaffNameDropdown();
+}
+
+function deleteSelectedStaffLocation() {
+    const select = document.getElementById("staffLocation");
+    const index = staffLocations.indexOf(select.value);
+    if (index === -1) { alert("Please select a staff location first."); return; }
+    if (!confirm("Delete staff location: " + staffLocations[index] + " ?")) return;
+    staffLocations.splice(index, 1);
+    localStorage.setItem("staffLocationMaster", JSON.stringify(staffLocations));
+    loadStaffLocationDropdown();
 }
 
 
